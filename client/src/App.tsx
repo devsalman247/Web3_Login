@@ -1,34 +1,38 @@
 import { useState, useEffect } from "react";
-import WalletConnectProvider from "@walletconnect/web3-provider/dist/umd/index.min.js";
+import WalletConnectProvider from "@walletconnect/web3-provider/dist/umd/index.min.js";;
 import { ethers } from "ethers";
 import Swal from "sweetalert2";
 import Web3 from "web3";
 
 function App() {
-  const [user, setUser] = useState({});
+  const [user, setUser] : any = useState({});
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(0);
 
-  const saveUserInfo = (ethBalance, account, chainId) => {
+  const saveUserInfo = (
+    ethBalance: string,
+    account: String,
+    chainId: Number
+  ) => {
     const userAccount = {
       account: account,
       balance: ethBalance,
       connectionid: chainId,
     };
     window.localStorage.setItem("metamask", JSON.stringify(userAccount));
-    const userData = JSON.parse(localStorage.getItem("metamask"));
+    const userData = JSON.parse(localStorage.getItem("metamask") || "{}");
     setUser(userData);
     setIsConnected(true);
   };
 
-  const saveWallet = (account, ethBalance, chainId) => {
+  const saveWallet = (account: String, ethBalance: String, chainId: Number) => {
     const userAccount = {
       account: account,
       balance: ethBalance,
       connectionid: chainId,
     };
     window.localStorage.setItem("walletconnect", JSON.stringify(userAccount));
-    const userData = JSON.parse(localStorage.getItem("walletconnect"));
+    const userData = JSON.parse(localStorage.getItem("walletconnect") || "{}");
     setUser(userData);
     setIsConnected(true);
   };
@@ -43,20 +47,20 @@ function App() {
         console.log("hello", provider);
         await provider.enable();
 
-        provider.on("accountsChanged", (accounts) => {
+        provider.on("accountsChanged", (accounts: String[]) => {
           console.log(accounts);
         });
 
-        provider.on("chainChanged", (chainId) => {
+        provider.on("chainChanged", (chainId: Number) => {
           console.log(chainId);
         });
 
-        provider.on("disconnect", async (code, reason) => {
+        provider.on("disconnect", async (code: Object, reason: Object) => {
           await provider.disconnect();
           setUser({});
           setIsConnected(false);
         });
-        const web3 = new Web3(provider);
+        const web3 = new Web3(provider as any);
         const accounts = await web3.eth.getAccounts();
         const account = accounts[0];
         let ethBalance = await web3.eth.getBalance(accounts[0]);
@@ -104,7 +108,7 @@ function App() {
         const signer = provider.getSigner();
         const chainId = await signer.getChainId();
         const account = await signer.getAddress();
-        let ethBalance = await provider.getBalance(account);
+        let ethBalance: any = await provider.getBalance(account);
         ethBalance = ethers.utils.formatEther(ethBalance);
         await signer.signMessage("Hello Web3!");
         saveUserInfo(ethBalance, account, chainId);
@@ -129,27 +133,28 @@ function App() {
       });
       return;
     }
-    let provider;
-    if (window.ethereum) {
-      provider = window.ethereum;
-    } else if (window.web3) {
-      provider = window.web3.currentProvider;
-    } else {
-      console.log(
-        "Non-Ethereum browser detected. You should consider trying MetaMask!"
-      );
-    }
     try {
+      let provider: Object | any;
+      if (window.ethereum) {
+        provider = window.ethereum;
+      } else if (window.web3) {
+        provider = window.web3.currentProvider;
+      } else {
+        console.log(
+          "Non-Ethereum browser detected. You should consider trying MetaMask!"
+        );
+      }
       if (provider) {
         await provider.request({ method: "eth_requestAccounts" });
+
+        provider.on("disconnect", async (code: Object, reason: Object) => {
+          window.localStorage.removeItem("metamask");
+          await provider?.disconnect();
+          setUser({});
+          setIsConnected(false);
+        });
       }
-      provider.on("disconnect", async (code, reason) => {
-        window.localStorage.removeItem("metamask");
-        await provider.disconnect();
-        setUser({});
-        setIsConnected(false);
-      });
-      const web3 = new Web3(provider);
+      const web3: any = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
       await web3.eth.personal
         .sign("Hello Web3!", userAccount[0])
@@ -175,7 +180,7 @@ function App() {
   };
 
   async function getChainId() {
-    const web3 = new Web3(window.ethereum);
+    const web3 = new Web3(window.ethereum as any);
     const chainId = await web3.eth.getChainId();
     setChainId(chainId);
   }
@@ -196,15 +201,15 @@ function App() {
   useEffect(() => {
     function checkConnectedWallet() {
       const userData =
-        JSON.parse(localStorage.getItem("metamask")) ||
-        JSON.parse(localStorage.getItem("walletconnect"));
+        JSON.parse(localStorage.getItem("metamask") as string | '{}') ||
+        JSON.parse(localStorage.getItem("walletconnect") as string);
       if (userData != null) {
         setUser(userData);
         setIsConnected(true);
       }
     }
     getChainId();
-    window.ethereum.on("accountsChanged", async (accounts) => {
+    window.ethereum.on("accountsChanged", async (accounts: string[]) => {
       console.log(accounts);
       if (accounts.length === 0) {
         window.localStorage.removeItem("metamask");
@@ -212,7 +217,7 @@ function App() {
         setIsConnected(false);
       }
     });
-    window.ethereum.on("chainChanged", (chainId) => {
+    window.ethereum.on("chainChanged", (chainId: number) => {
       getChainId();
     });
     checkConnectedWallet();
