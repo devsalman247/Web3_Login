@@ -1,12 +1,16 @@
 import { Strategy as LocalStrategy } from "passport-local";
-import { User } from "@models";
+import User from "@models/User";
 
 const myStrategy = new LocalStrategy(
   {
     usernameField: "email",
     passwordField: "password",
   },
-  function (email: string | undefined, password: string | undefined, done: Function) {
+  function (
+    email: string | undefined,
+    password: string | undefined,
+    done: any
+  ) {
     User.findOne({ email })
       .then((user: any) => {
         if (!user || !user.validPassword(password)) {
@@ -20,4 +24,4 @@ const myStrategy = new LocalStrategy(
   }
 );
 
-module.exports = myStrategy;
+export default myStrategy;

@@ -1,12 +1,13 @@
-const jwt = require("jsonwebtoken"),
-  secret = require("../config/env/index").secret;
-const {
+import jwt from "jsonwebtoken";
+import secret from "@secret";
+import {
   OkResponse,
   BadRequestResponse,
   UnauthorizedResponse,
-} = require("express-http-response");
+} from "express-http-response";
+import { Request, Response, NextFunction } from "express";
 
-const verifyToken = function (req, res, next) {
+const verifyToken = function (req: Request, res: Response, next: NextFunction) {
   const { authorization } = req.headers;
   if (
     (authorization && authorization.split(" ")[0] === "Token") ||
@@ -14,7 +15,7 @@ const verifyToken = function (req, res, next) {
   ) {
     const token = authorization.split(" ")[1];
     try {
-      jwt.verify(token, secret, (error, data) => {
+      jwt.verify(token, secret as any, (error: any, data: any) => {
         if (error) {
           next(new BadRequestResponse({ error: { message: "Log in first" } }));
         } else {
