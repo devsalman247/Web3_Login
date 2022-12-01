@@ -5,11 +5,16 @@ import Swal from "sweetalert2";
 import Web3 from "web3";
 
 function App() {
-  const [user, setUser] = useState({});
+  let defaultUser: any = {};
+  const [user, setUser] = useState(defaultUser);
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(0);
 
-  const saveUserInfo = (ethBalance: string, account: string, chainId: number) => {
+  const saveUserInfo = (
+    ethBalance: string,
+    account: string,
+    chainId: number
+  ) => {
     const userAccount = {
       account: account,
       balance: ethBalance,
@@ -17,7 +22,7 @@ function App() {
     };
     window.localStorage.setItem("metamask", JSON.stringify(userAccount));
     const userData = JSON.parse(localStorage.getItem("metamask") as string);
-    setUser(userData);
+    setUser({ ...user, ...userData });
     setIsConnected(true);
   };
 
@@ -28,8 +33,10 @@ function App() {
       connectionid: chainId,
     };
     window.localStorage.setItem("walletconnect", JSON.stringify(userAccount));
-    const userData = JSON.parse(localStorage.getItem("walletconnect") as string);
-    setUser(userData);
+    const userData = JSON.parse(
+      localStorage.getItem("walletconnect") as string
+    );
+    setUser({ ...user, ...userData });
     setIsConnected(true);
   };
 
@@ -53,7 +60,7 @@ function App() {
 
         provider.on("disconnect", async (code: object, reason: object) => {
           await provider.disconnect();
-          setUser({});
+          setUser(defaultUser);
           setIsConnected(false);
         });
         const web3 = new Web3(provider);
@@ -72,7 +79,7 @@ function App() {
             timer: 1500,
           });
           await provider.disconnect();
-          setUser({});
+          setUser(defaultUser);
           setIsConnected(false);
           return;
         }
@@ -146,13 +153,13 @@ function App() {
       provider.on("disconnect", async (code: object, reason: object) => {
         window.localStorage.removeItem("metamask");
         await provider.disconnect();
-        setUser({});
+        setUser(defaultUser);
         setIsConnected(false);
       });
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
       await web3.eth.personal
-        .sign("Hello Web3!", userAccount[0])
+        .sign("Hello Web3!", userAccount[0], "")
         .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
@@ -170,7 +177,7 @@ function App() {
     if (walletconnect) {
       localStorage.removeItem("walletconnect");
     }
-    setUser({});
+    setUser(defaultUser);
     setIsConnected(false);
   };
 
@@ -199,7 +206,7 @@ function App() {
         JSON.parse(localStorage.getItem("metamask") as string) ||
         JSON.parse(localStorage.getItem("walletconnect") as string);
       if (userData != null) {
-        setUser(userData);
+        setUser({ ...user, ...userData });
         setIsConnected(true);
       }
     }
@@ -208,7 +215,7 @@ function App() {
       console.log(accounts);
       if (accounts.length === 0) {
         window.localStorage.removeItem("metamask");
-        setUser({});
+        setUser(defaultUser);
         setIsConnected(false);
       }
     });
