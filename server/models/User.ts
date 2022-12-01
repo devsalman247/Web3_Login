@@ -3,40 +3,18 @@ import uniqueValidator from "mongoose-unique-validator";
 
 const UserSchema = new mongoose.Schema(
   {
-    googleId: {
-      type: String,
-      required: true,
-      unique: true,
+    nonce : {
+      type : Number,
+      required : true
     },
-    mail: {
-      type: String,
-      required: true,
-      unique: true,
+    publicAddress : {
+      type : String,
+      unique : true,
+      lowercase : true
     },
-    name: {
-      type: String,
-      required: true,
-    },
-    photo: {
-      type: String,
-      default:
-        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
-    },
-    cnic: {
-      type: Number,
-      default: null,
-    },
-    center: {
-      type: mongoose.Schema.Types.ObjectId,
-      default: null,
-    },
-    participated: {
-      type: Boolean,
-      default: false,
-    },
-    role: {
-      type: Number,
-      default: 0, // voter = 0, candidate = 1, admin = 2
+    username : {
+      type : String,
+      unique : true
     },
   },
   { timestamps: true }
