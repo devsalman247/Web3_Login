@@ -1,17 +1,17 @@
-const LocalStrategy = require("passport-local").Strategy,
-  User = require("../models/User");
+import { Strategy as LocalStrategy } from "passport-local";
+import { User } from "@models";
 
 const myStrategy = new LocalStrategy(
   {
     usernameField: "email",
     passwordField: "password",
   },
-  (email, password, done) => {
+  function (email: string | undefined, password: string | undefined, done: Function) {
     User.findOne({ email })
-      .then((user) => {
+      .then((user: any) => {
         if (!user || !user.validPassword(password)) {
           return done(null, false, {
-            errors: { message: "Email or Password is invalid" },
+            errors: { message: "email or password is invalid" },
           });
         }
         return done(null, user);

@@ -1,13 +1,8 @@
-// /// <reference types="vite/client" />
-
-declare module "*";
-
+/// <reference types="vite/client" />
 export {};
 declare global {
   interface Window {
-    ethereum: {
-      [key: string]: Item;
-    };
-    [key: string]: any;
+    ethereum?: any | undefined;
+    web3?: any | undefined;
   }
 }

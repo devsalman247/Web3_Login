@@ -1,68 +1,42 @@
-const mongoose = require("mongoose"),
-  uniqueValidator = require("mongoose-unique-validator"),
-  jwt = require("jsonwebtoken"),
-  bcrypt = require("bcrypt"),
-  secret = require("../config/env/index").secret;
+import mongoose from "mongoose";
+import uniqueValidator from "mongoose-unique-validator";
 
 const UserSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: [true, "is required."],
-    },
-    email: {
-      type: String,
-      required: [true, "is required"],
-      unique: true,
-      match: [/\S+@\S+\.\S+/, "is invalid"],
-    },
-    about: {
-      type: String,
-      required: [true, "is required."],
-    },
-    hash: {
-      type: String,
-      required: [true, "is required"],
-    },
-    requests: [
-      {
-        requestId: {
-          type: mongoose.Schema.Types.ObjectId,
-        },
-        status: {
-          type: Number,
-          enum: [
-            0, //requested
-            1, //pending
-          ],
-        },
-      },
-    ],
-    friends: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-      },
-    ],
-    groups: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Group",
-      },
-    ],
-    blocked: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-      },
-    ],
-    archivedChats: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Chat",
-      },
-    ],
-    salt: {
+    googleId: {
       type: String,
       required: true,
+      unique: true,
+    },
+    mail: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    photo: {
+      type: String,
+      default:
+        "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+    },
+    cnic: {
+      type: Number,
+      default: null,
+    },
+    center: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    participated: {
+      type: Boolean,
+      default: false,
+    },
+    role: {
+      type: Number,
+      default: 0, // voter = 0, candidate = 1, admin = 2
     },
   },
   { timestamps: true }
@@ -70,57 +44,18 @@ const UserSchema = new mongoose.Schema(
 
 UserSchema.plugin(uniqueValidator, { message: "is already taken." });
 
-UserSchema.methods.setPassword = function () {
-  this.salt = bcrypt.genSaltSync();
-  this.hash = bcrypt.hashSync(this.hash, this.salt);
-};
-
-UserSchema.methods.validPassword = function (password) {
-  return bcrypt.compareSync(password, this.hash);
-};
-
-const autoPopulate = function (next) {
-  this.populate("groups");
-  this.populate("archivedChats");
-  next();
-};
-
-UserSchema.pre("findOne", autoPopulate);
-UserSchema.pre("find", autoPopulate);
-UserSchema.pre("findById", autoPopulate);
-
-UserSchema.methods.generateJWT = function () {
-  return jwt.sign(
-    {
-      id: this.id,
-      name: this.name,
-      email: this.email,
-    },
-    secret,
-    { expiresIn: "4h" }
-  );
-};
-
-UserSchema.methods.toAuthJSON = function () {
-  return {
-    name: this.name,
-    email: this.email,
-    token: this.generateJWT(),
-  };
-};
-
 UserSchema.methods.toJSON = function () {
   return {
     id: this.id,
+    googleId: this.googleId,
+    mail: this.mail,
     name: this.name,
-    email: this.email,
-    about: this.about,
-    requests: this.requests,
-    friends: this.friends,
-    groups: this.groups,
-    blocked: this.blocked,
-    archivedChats: this.archivedChats,
+    photo: this.photo,
+    cnic: this.cnic,
+    center: this.center,
+    participated: this.participated,
+    role: this.role,
   };
 };
 
-module.exports = mongoose.model("User", UserSchema);
+export default mongoose.model("User", UserSchema);

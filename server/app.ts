@@ -1,20 +1,15 @@
-const express = require("express"),
-  app = express(),
-  router = require("./routes"),
-  cors = require("cors"),
-  mongoose = require("mongoose"),
-  httpResponse = require("express-http-response"),
-  { Server } = require("socket.io"),
+import "module-alias/register";
+import router from "./routes/index";
+import cors from "cors";
+import mongoose from "mongoose";
+import httpResponse from "express-http-response";
+import express from "express";
+const app = express(),
   PORT = process.env.PORT || 3000;
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/gupshup", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
-    useCreateIndex: true,
-  })
-  .catch((err) => {
+  .connect("mongodb://127.0.0.1:27017/gupshup")
+  .catch((err: object) => {
     console.log(err);
   })
   .then(() => {
@@ -22,10 +17,6 @@ mongoose
   });
 
 // mongoose.set('debug',true);
-
-require("../server/models/User");
-require("../server/models/Chat");
-require("../server/models/Group");
 
 app.use(express.json());
 app.use(cors());
