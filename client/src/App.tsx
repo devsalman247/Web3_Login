@@ -3,6 +3,7 @@ import WalletConnectProvider from "@walletconnect/web3-provider/dist/umd/index.m
 import { ethers, BigNumber } from "ethers";
 import Swal from "sweetalert2";
 import Web3 from "web3";
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 function App() {
   let defaultUser: any = {};
@@ -10,120 +11,20 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(0);
 
-  const saveUserInfo = (
-    ethBalance: string,
-    account: string,
-    chainId: number
-  ) => {
-    const userAccount = {
-      account: account,
-      balance: ethBalance,
-      connectionid: chainId,
-    };
-    window.localStorage.setItem("metamask", JSON.stringify(userAccount));
-    const userData = JSON.parse(localStorage.getItem("metamask") as string);
-    setUser({ ...user, ...userData });
-    setIsConnected(true);
+  const isSignedUp = (address: string): boolean => {
+    let status: boolean = false;
+
+    fetch(`${VITE_BACKEND_URL}?publicAddress=${address}`)
+      .then((response) => response.json())
+      .then((user: { status: boolean }) => {
+        status = user.status;
+      })
+      .catch((err: any) => console.log(err));
+
+    return status;
   };
 
-  const saveWallet = (account: string, ethBalance: string, chainId: number) => {
-    const userAccount = {
-      account: account,
-      balance: ethBalance,
-      connectionid: chainId,
-    };
-    window.localStorage.setItem("walletconnect", JSON.stringify(userAccount));
-    const userData = JSON.parse(
-      localStorage.getItem("walletconnect") as string
-    );
-    setUser({ ...user, ...userData });
-    setIsConnected(true);
-  };
-
-  async function walletconnect() {
-    const provider: any = new WalletConnectProvider({
-      infuraId: "d9f3bb64fb3c42d59ec58bb01df0cdb9",
-    });
-
-    try {
-      if (provider) {
-        console.log("hello", provider);
-        await provider.enable();
-
-        provider.on("accountsChanged", (accounts: string[]) => {
-          console.log(accounts);
-        });
-
-        provider.on("chainChanged", (chainId: number) => {
-          console.log(chainId);
-        });
-
-        provider.on("disconnect", async (code: object, reason: object) => {
-          await provider.disconnect();
-          setUser(defaultUser);
-          setIsConnected(false);
-        });
-        const web3 = new Web3(provider);
-        const accounts = await web3.eth.getAccounts();
-        const account = accounts[0];
-        let ethBalance = await web3.eth.getBalance(accounts[0]);
-        ethBalance = web3.utils.fromWei(ethBalance, "ether");
-        const chainId = await web3.eth.getChainId();
-        if (chainId !== 97) {
-          Swal.fire({
-            position: "center",
-            icon: "error",
-            title:
-              "Wrong chain selected..Please select Binance Smart Chain to connect",
-            showConfirmButton: false,
-            timer: 1500,
-          });
-          await provider.disconnect();
-          setUser(defaultUser);
-          setIsConnected(false);
-          return;
-        }
-        saveWallet(account, ethBalance, chainId);
-      } else {
-        console.log("Something went wrong!!");
-      }
-    } catch (err: any) {
-      console.log(err);
-    }
-  }
-
-  async function connectByEther() {
-    if (chainId !== 56) {
-      Swal.fire({
-        position: "center",
-        icon: "error",
-        title:
-          "Wrong chain selected..Please select Binance Smart Chain to connect",
-        showConfirmButton: false,
-        timer: 1500,
-      });
-      return;
-    }
-    try {
-      if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        const signer = provider.getSigner();
-        const chainId = await signer.getChainId();
-        const account = await signer.getAddress();
-        let ethBalance: BigNumber | string = await provider.getBalance(account);
-        ethBalance = ethers.utils.formatEther(ethBalance);
-        await signer.signMessage("Hello Web3!");
-        saveUserInfo(ethBalance, account, chainId);
-      } else {
-        console.log("Can't found any ethereum configured wallet");
-      }
-    } catch (err: any) {
-      console.log(err);
-    }
-  }
-
-  async function connectWallet() {
+  async function handleSignUp() {
     console.log(chainId);
     if (chainId !== 56) {
       Swal.fire({
@@ -150,22 +51,78 @@ function App() {
       if (provider) {
         await provider.request({ method: "eth_requestAccounts" });
       }
+      const web3 = new Web3(provider);
+      const userAccount = await web3.eth.getAccounts();
+      await web3.eth.personal
+        .sign("Connecting to Web3!", userAccount[0], "")
+        .then(console.log);
+      const chainId = await web3.eth.getChainId();
+      const account = userAccount[0];
+      let ethBalance = await web3.eth.getBalance(account);
+      ethBalance = web3.utils.fromWei(ethBalance, "ether");
+      const status: boolean = isSignedUp(account);
+      status
+        ? console.log("You've already signed up!")
+        : console.log("You can signup.");
+
       provider.on("disconnect", async (code: object, reason: object) => {
         window.localStorage.removeItem("metamask");
         await provider.disconnect();
         setUser(defaultUser);
         setIsConnected(false);
       });
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function handleLoggin() {
+    console.log(chainId);
+    if (chainId !== 56) {
+      Swal.fire({
+        position: "center",
+        icon: "error",
+        title:
+          "Wrong chain selected..Please select Binance Smart Chain to connect",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+      return;
+    }
+    let provider: any;
+    if (window.ethereum) {
+      provider = window.ethereum;
+    } else if (window.web3) {
+      provider = window.web3.currentProvider;
+    } else {
+      console.log(
+        "Non-Ethereum browser detected. You should consider trying MetaMask!"
+      );
+    }
+    try {
+      if (provider) {
+        await provider.request({ method: "eth_requestAccounts" });
+      }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
       await web3.eth.personal
-        .sign("Hello Web3!", userAccount[0], "")
+        .sign("Connecting to Web3!", userAccount[0], "")
         .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
-      saveUserInfo(ethBalance, account, chainId);
+      const status: boolean = isSignedUp(account);
+      !status
+        ? console.log("You've to signup first!")
+        : console.log("You can login.");
+
+      provider.on("disconnect", async (code: object, reason: object) => {
+        window.localStorage.removeItem("metamask");
+        await provider.disconnect();
+        setUser(defaultUser);
+        setIsConnected(false);
+      });
     } catch (err) {
       console.log(err);
     }
@@ -198,6 +155,7 @@ function App() {
         timer: 1500,
       });
     }
+    console.log(VITE_BACKEND_URL);
   }, [chainId]);
 
   useEffect(() => {
@@ -247,21 +205,15 @@ function App() {
         <div>
           <button
             className="px-3 py-2 rounded bg-slate-500 text-white focus:outline-none"
-            onClick={connectWallet}
+            onClick={() => handleLoggin()}
           >
-            Connect to Metamask
+            Login with Metamask
           </button>
           <button
             className="px-3 py-2 ml-2 rounded bg-slate-500 text-white focus:outline-none"
-            onClick={connectByEther}
+            onClick={() => handleSignUp()}
           >
-            Connect to Metamask using EtherJs
-          </button>
-          <button
-            className="px-3 py-2 ml-2 rounded bg-slate-500 text-white focus:outline-none"
-            onClick={walletconnect}
-          >
-            Connect with WalletConnect
+            SignUp with Metamask
           </button>
           <div className="mt-2">Status : Not Connected</div>
         </div>
