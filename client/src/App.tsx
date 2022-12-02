@@ -3,6 +3,7 @@ import WalletConnectProvider from "@walletconnect/web3-provider/dist/umd/index.m
 import { ethers, BigNumber } from "ethers";
 import Swal from "sweetalert2";
 import Web3 from "web3";
+import axios from "axios";
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 function App() {
@@ -11,20 +12,57 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [chainId, setChainId] = useState(0);
 
-  const isSignedUp = (address: string): boolean => {
-    let status: boolean = false;
+  const isSignedUp = async (address: string): Promise<void> => {
+    let user;
 
-    fetch(`${VITE_BACKEND_URL}?publicAddress=${address}`)
+    await fetch(`${VITE_BACKEND_URL}?publicAddress=${address}`)
       .then((response) => response.json())
-      .then((user: { status: boolean }) => {
-        status = user.status;
-      })
+      .then(
+        (retUser: {
+          data: {
+            status: boolean;
+            publicAddress: string | undefined;
+            nonce: number | undefined;
+          };
+        }) => {
+          user = { ...retUser.data };
+        }
+      )
       .catch((err: any) => console.log(err));
 
-    return status;
+    return user;
   };
 
-  async function handleSignUp() {
+  const handleSignMessage = async ({
+    web3,
+    publicAddress,
+    nonce,
+  }: any): Promise<void> => {
+    console.log(web3, publicAddress, nonce);
+    const signature = await web3.eth.personal.sign(
+      `I am signing my one-time nonce: ${nonce}`,
+      publicAddress,
+      (err: any, signature: any) => {
+        if (err) console.log(err);
+        return signature;
+      }
+    );
+    console.log("signature", signature);
+    return signature;
+  };
+
+  const handleAuthenticate = async ({ publicAddress, signature }: any) => {
+    console.log("error in authenticate fn");
+    await axios
+      .post(`${VITE_BACKEND_URL}/auth`, {
+        publicAddress,
+        signature,
+      })
+      .then((res) => console.log(res))
+      .catch((err) => console.log(err));
+  };
+
+  async function handleSignUp(): Promise<void> {
     console.log(chainId);
     if (chainId !== 56) {
       Swal.fire({
@@ -60,10 +98,28 @@ function App() {
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
-      const status: boolean = isSignedUp(account);
-      status
-        ? console.log("You've already signed up!")
-        : console.log("You can signup.");
+      const user: any = isSignedUp(account);
+      if (user.status) {
+        console.log("You've already signed up!");
+        return;
+      } else {
+        console.log("You can sign up.");
+        await axios
+          .post(`${VITE_BACKEND_URL}/signup`, { publicAddress: account })
+          .then((res: any) => {
+            console.log(res);
+            return handleSignMessage({
+              web3,
+              publicAddress: account,
+              nonce: res.data.data.nonce,
+            });
+          })
+          .then((signature) => {
+            console.log(signature);
+            handleAuthenticate({ publicAddress: account, signature });
+          })
+          .catch((err: any) => console.log(err));
+      }
 
       provider.on("disconnect", async (code: object, reason: object) => {
         window.localStorage.removeItem("metamask");
@@ -113,9 +169,26 @@ function App() {
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
       const status: boolean = isSignedUp(account);
-      !status
-        ? console.log("You've to signup first!")
-        : console.log("You can login.");
+      if (!status) {
+        console.log("You've to signup first!");
+        return;
+      } else {
+        console.log("You can login.");
+        fetch(`${VITE_BACKEND_URL}/login`, {
+          body: JSON.stringify({ account }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((res) => {
+            console.log(res);
+            // handleSignMessage({ account, res.data.data.nonce });
+          })
+          .then((signedObj) => handleAuthenticate(signedObj))
+          .catch((err: any) => console.log(err));
+      }
 
       provider.on("disconnect", async (code: object, reason: object) => {
         window.localStorage.removeItem("metamask");

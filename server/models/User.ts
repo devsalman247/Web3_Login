@@ -3,37 +3,20 @@ import uniqueValidator from "mongoose-unique-validator";
 
 const UserSchema = new mongoose.Schema(
   {
-    nonce : {
-      type : Number,
-      required : true
+    nonce: {
+      type: Number,
+      default: () => Math.floor(Math.random() * 1000000),
+      required: true,
     },
-    publicAddress : {
-      type : String,
-      unique : true,
-      lowercase : true
-    },
-    username : {
-      type : String,
-      unique : true
+    publicAddress: {
+      type: String,
+      unique: true,
+      lowercase: true,
     },
   },
   { timestamps: true }
 );
 
 UserSchema.plugin(uniqueValidator, { message: "is already taken." });
-
-UserSchema.methods.toJSON = function () {
-  return {
-    id: this.id,
-    googleId: this.googleId,
-    mail: this.mail,
-    name: this.name,
-    photo: this.photo,
-    cnic: this.cnic,
-    center: this.center,
-    participated: this.participated,
-    role: this.role,
-  };
-};
 
 export default mongoose.model("User", UserSchema);
