@@ -91,23 +91,49 @@ function App() {
       }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
-      // await web3.eth.personal
-      //   .sign("Connecting to Web3!", userAccount[0], "")
-      //   .then(console.log);
+      const signature: string | void = await web3.eth.personal
+        .sign("Connecting to Web3!", userAccount[0], "")
+        .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
-      const user: any = isSignedUp(account);
+      const user: any = await isSignedUp(account);
+      console.log(user.status);
       if (user.status) {
         console.log("You've already signed up!");
+        (Swal as any).fire({
+          toast: true,
+          icon: "error",
+          title: "You've already signed up!",
+          position: "bottom",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast: any) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+          },
+        });
         return;
       } else {
         console.log("You can sign up.");
         await axios
           .post(`${VITE_BACKEND_URL}/signup`, { publicAddress: account })
           .then(() => {
-            alert("Signup successful");
+            (Swal as any).fire({
+              toast: true,
+              icon: "success",
+              title: "Signup successful!",
+              position: "bottom",
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              didOpen: (toast: any) => {
+                toast.addEventListener("mouseenter", Swal.stopTimer);
+                toast.addEventListener("mouseleave", Swal.resumeTimer);
+              },
+            });
           })
           // .then((res: any) => {
           //   console.log(res);
@@ -130,7 +156,22 @@ function App() {
         setUser(defaultUser);
         setIsConnected(false);
       });
-    } catch (err) {
+    } catch (err: any) {
+      if (err.code === 4001) {
+        (Swal as any).fire({
+          toast: true,
+          icon: "error",
+          title: "You've to sign message to signup!",
+          position: "bottom",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast: any) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+          },
+        });
+      }
       console.log(err);
     }
   }
@@ -171,9 +212,23 @@ function App() {
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
-      const user: any = isSignedUp(account);
-      if (user.status) {
+      const user: any = await isSignedUp(account);
+      console.log(user.status);
+      if (!user.status) {
         console.log("You've to signup first!");
+        (Swal as any).fire({
+          toast: true,
+          icon: "error",
+          title: "You've to signup first!",
+          position: "bottom",
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast: any) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+          },
+        });
         return;
       } else {
         console.log("You can login.");
@@ -190,9 +245,38 @@ function App() {
           .then((signature) => {
             console.log(signature);
             handleAuthenticate({ publicAddress: account, signature });
-            alert("Login Successful!");
+            (Swal as any).fire({
+              toast: true,
+              icon: "success",
+              title: "Login Successful!",
+              position: "bottom",
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true,
+              didOpen: (toast: any) => {
+                toast.addEventListener("mouseenter", Swal.stopTimer);
+                toast.addEventListener("mouseleave", Swal.resumeTimer);
+              },
+            });
           })
-          .catch((err: any) => console.log(err));
+          .catch((err: any) => {
+            if (err.code === 4001) {
+              (Swal as any).fire({
+                toast: true,
+                icon: "error",
+                title: "You've to sign message to login!",
+                position: "bottom",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast: any) => {
+                  toast.addEventListener("mouseenter", Swal.stopTimer);
+                  toast.addEventListener("mouseleave", Swal.resumeTimer);
+                },
+              });
+            }
+            console.log(err);
+          });
       }
 
       provider.on("disconnect", async (code: object, reason: object) => {
