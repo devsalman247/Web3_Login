@@ -91,9 +91,9 @@ function App() {
       }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
-      await web3.eth.personal
-        .sign("Connecting to Web3!", userAccount[0], "")
-        .then(console.log);
+      // await web3.eth.personal
+      //   .sign("Connecting to Web3!", userAccount[0], "")
+      //   .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
@@ -106,18 +106,21 @@ function App() {
         console.log("You can sign up.");
         await axios
           .post(`${VITE_BACKEND_URL}/signup`, { publicAddress: account })
-          .then((res: any) => {
-            console.log(res);
-            return handleSignMessage({
-              web3,
-              publicAddress: account,
-              nonce: res.data.data.nonce,
-            });
+          .then(() => {
+            alert("Signup successful");
           })
-          .then((signature) => {
-            console.log(signature);
-            handleAuthenticate({ publicAddress: account, signature });
-          })
+          // .then((res: any) => {
+          //   console.log(res);
+          //   return handleSignMessage({
+          //     web3,
+          //     publicAddress: account,
+          //     nonce: res.data.data.nonce,
+          //   });
+          // })
+          // .then((signature) => {
+          //   console.log(signature);
+          //   handleAuthenticate({ publicAddress: account, signature });
+          // })
           .catch((err: any) => console.log(err));
       }
 
@@ -161,32 +164,34 @@ function App() {
       }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
-      await web3.eth.personal
-        .sign("Connecting to Web3!", userAccount[0], "")
-        .then(console.log);
+      // await web3.eth.personal
+      //   .sign("Connecting to Web3!", userAccount[0], "")
+      //   .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
       ethBalance = web3.utils.fromWei(ethBalance, "ether");
-      const status: boolean = isSignedUp(account);
-      if (!status) {
+      const user: any = isSignedUp(account);
+      if (user.status) {
         console.log("You've to signup first!");
         return;
       } else {
         console.log("You can login.");
-        fetch(`${VITE_BACKEND_URL}/login`, {
-          body: JSON.stringify({ account }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-          method: "POST",
-        })
-          .then((response) => response.json())
-          .then((res) => {
+        await axios
+          .post(`${VITE_BACKEND_URL}/login`, { publicAddress: account })
+          .then((res: any) => {
             console.log(res);
-            // handleSignMessage({ account, res.data.data.nonce });
+            return handleSignMessage({
+              web3,
+              publicAddress: account,
+              nonce: res.data.data.nonce,
+            });
           })
-          .then((signedObj) => handleAuthenticate(signedObj))
+          .then((signature) => {
+            console.log(signature);
+            handleAuthenticate({ publicAddress: account, signature });
+            alert("Login Successful!");
+          })
           .catch((err: any) => console.log(err));
       }
 

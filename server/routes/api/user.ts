@@ -62,6 +62,25 @@ router.post("/signup", (req: Request, res: Response, next: NextFunction) => {
   );
 });
 
+router.post("/login", (req: Request, res: Response, next: NextFunction) => {
+  const { publicAddress } = req.body;
+  console.log(publicAddress);
+  User.findOne(
+    { publicAddress },
+    (
+      err: any,
+      user: { nonce: Number; publicAddress: string; username: string }
+    ) => {
+      if (err) {
+        return next(new BadRequestResponse("Something went wrong!"));
+      } else if (!user) {
+        return next(new UnauthorizedResponse("User is not registered!"));
+      }
+      next(new OkResponse(user));
+    }
+  );
+});
+
 router.post(
   "/auth",
   async (req: Request, res: Response, next: NextFunction) => {
@@ -100,7 +119,5 @@ router.post(
     });
   }
 );
-
-router.post("/login", (req: Request, res: Response, next: NextFunction) => {});
 
 export default router;
