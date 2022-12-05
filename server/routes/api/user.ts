@@ -35,7 +35,7 @@ router.get("/", (req: Request, res: Response, next: NextFunction) => {
 });
 
 router.post("/signup", (req: Request, res: Response, next: NextFunction) => {
-  const { publicAddress } = req.body;
+  const { publicAddress, signature, nonce } = req.body;
   console.log(publicAddress);
   User.findOne(
     { publicAddress },
@@ -47,6 +47,16 @@ router.post("/signup", (req: Request, res: Response, next: NextFunction) => {
         return next(new BadRequestResponse("Something went wrong!"));
       } else if (user) {
         return next(new UnauthorizedResponse("User has already registered!"));
+      }
+      const web3: any = new Web3(
+        "https://eth-mainnet.alchemyapi.io/v2/your-api-key"
+      );
+      const address = web3.eth.accounts.recover(
+        `I am signing up with my one-time nonce: ${nonce}`,
+        signature
+      );
+      if (address !== publicAddress) {
+        return next(new UnauthorizedResponse("Unauthortized user"));
       }
       const newUser: any = new User();
       newUser.publicAddress = publicAddress;

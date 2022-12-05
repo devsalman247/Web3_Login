@@ -91,9 +91,12 @@ function App() {
       }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
-      const signature: string | void = await web3.eth.personal
-        .sign("Connecting to Web3!", userAccount[0], "")
-        .then(console.log);
+      const nonce = Math.floor(Math.random() * 1000000);
+      const signature: string | void = await web3.eth.personal.sign(
+        `I am signing up with my one-time nonce: ${nonce}`,
+        userAccount[0],
+        ""
+      );
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
@@ -119,7 +122,23 @@ function App() {
       } else {
         console.log("You can sign up.");
         await axios
-          .post(`${VITE_BACKEND_URL}/signup`, { publicAddress: account })
+          .post(`${VITE_BACKEND_URL}/signup`, {
+            publicAddress: account,
+            signature,
+            nonce,
+          })
+          // .then((res: any) => {
+          //   console.log(res);
+          //   return handleSignMessage({
+          //     web3,
+          //     publicAddress: account,
+          //     nonce: res.data.data.nonce,
+          //   });
+          // })
+          // .then((signature) => {
+          //   console.log(signature);
+          //   handleAuthenticate({ publicAddress: account, signature });
+          // })
           .then(() => {
             (Swal as any).fire({
               toast: true,
@@ -135,19 +154,32 @@ function App() {
               },
             });
           })
-          // .then((res: any) => {
-          //   console.log(res);
-          //   return handleSignMessage({
-          //     web3,
-          //     publicAddress: account,
-          //     nonce: res.data.data.nonce,
-          //   });
-          // })
-          // .then((signature) => {
-          //   console.log(signature);
-          //   handleAuthenticate({ publicAddress: account, signature });
-          // })
-          .catch((err: any) => console.log(err));
+          .catch(async (err: any) => {
+            await axios
+              .delete(`${VITE_BACKEND_URL}/delete`, {
+                data: {
+                  publicAddress: account,
+                },
+              })
+              .then((res) => console.log(res))
+              .catch((err) => console.log(err));
+            if (err.code === 4001) {
+              (Swal as any).fire({
+                toast: true,
+                icon: "error",
+                title: "You've to sign message to signup!",
+                position: "bottom",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast: any) => {
+                  toast.addEventListener("mouseenter", Swal.stopTimer);
+                  toast.addEventListener("mouseleave", Swal.resumeTimer);
+                },
+              });
+            }
+            console.log(err);
+          });
       }
 
       provider.on("disconnect", async (code: object, reason: object) => {
@@ -205,9 +237,6 @@ function App() {
       }
       const web3 = new Web3(provider);
       const userAccount = await web3.eth.getAccounts();
-      // await web3.eth.personal
-      //   .sign("Connecting to Web3!", userAccount[0], "")
-      //   .then(console.log);
       const chainId = await web3.eth.getChainId();
       const account = userAccount[0];
       let ethBalance = await web3.eth.getBalance(account);
